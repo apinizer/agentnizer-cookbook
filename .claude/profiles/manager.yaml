@@ -1,0 +1,58 @@
+# .claude/profiles/manager.yaml
+# Example "manager" / control-plane module.
+# Replace command bodies with whatever your stack uses.
+
+module: manager
+type: control_plane
+default_risk_level: MEDIUM
+
+# Files this profile claims (used by /verify and the after-code-change hook
+# to figure out which module a changed file belongs to).
+paths:
+  - "apps/manager/**"
+
+build:
+  command: "<your build command for the manager module>"
+  cwd: "apps/manager"
+
+test:
+  command: "<your test command for the manager module>"
+
+lint:
+  command: "<your lint command for the manager module>"
+
+# Optional: full smoke and e2e commands for the qa agent.
+# smoke:
+#   command: "<command that briefly verifies the module is alive>"
+# e2e:
+#   command: "<command that exercises a full flow through the module>"
+
+manifest_check:
+  performance:
+    - "Async I/O on the request path? (no blocking calls)"
+    - "DB queries use indexes?"
+    - "List endpoints paginated?"
+  thread_safety:
+    - "No module-level mutable state?"
+    - "State scoped to request/session only?"
+  safety:
+    - "Authorization checked on every protected endpoint?"
+    - "Tenant isolation enforced (row-level security or equivalent)?"
+    - "Inputs validated strictly (no untrusted free-form data)?"
+    - "Secrets never returned in API responses?"
+  observability:
+    - "Audit log on every write (who / what / when)?"
+    - "Distributed-trace span per request?"
+    - "Structured log includes tenant_id, user_id, endpoint?"
+
+# When this module's tests run, these other modules' tests should also run.
+cascade:
+  triggers: []
+
+depends_on:
+  - shared
+
+notes: |
+  This is the control-plane example. RBAC + tenant isolation should be
+  non-negotiable for any manager-shaped module. Every state-changing
+  endpoint should produce an audit log entry.

@@ -1,0 +1,59 @@
+# examples/quickstart/profiles/demo.yaml
+# Minimal "always passes" profile. Lets you run the pipeline end-to-end
+# on a fresh checkout, without having a real codebase wired up.
+#
+# Copy this to .claude/profiles/demo.yaml and run:
+#   ./team.sh start "$(cat examples/quickstart/task.txt)"
+
+module: demo
+type: example
+default_risk_level: LOW
+
+# Files this profile claims (used by /verify and the after-code-change
+# hook to figure out which module a changed file belongs to).
+paths:
+  - "examples/quickstart/code/**"
+
+# All commands intentionally trivial. They exit 0, print a string,
+# and let the agents progress through the pipeline without needing
+# a real toolchain installed.
+build:
+  command: 'echo "[demo] build OK"'
+  cwd: "examples/quickstart"
+
+test:
+  command: 'echo "[demo] tests OK — 0 failed, 0 skipped"'
+  cwd: "examples/quickstart"
+
+lint:
+  command: 'echo "[demo] lint OK — 0 errors, 0 warnings"'
+  cwd: "examples/quickstart"
+
+smoke:
+  command: 'echo "[demo] smoke OK"'
+  cwd: "examples/quickstart"
+
+manifest_check:
+  performance:
+    - "Demo profile — performance is not actually checked."
+  thread_safety:
+    - "Demo profile — thread-safety is not actually checked."
+  safety:
+    - "Demo profile — safety is not actually checked."
+  observability:
+    - "Demo profile — observability is not actually checked."
+
+cascade:
+  triggers: []
+
+depends_on: []
+
+notes: |
+  This is the quickstart demo profile. Its only purpose is to let you
+  validate that the AI pipeline runs end-to-end on your machine before
+  you point it at your real codebase. The build/test/lint commands all
+  pass trivially; the agents do real work and produce real .state/
+  artifacts, but no real code gets compiled or tested.
+
+  Replace this file with profiles for your actual modules once you've
+  confirmed the pipeline runs.

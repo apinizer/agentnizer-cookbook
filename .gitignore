@@ -1,0 +1,28 @@
+# Secrets
+.claude/.env
+.claude/scheduled_tasks.lock
+
+# State (local to each user)
+.state/
+.claude/state/
+
+# OS
+.DS_Store
+*.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+
+# Node
+node_modules/
+.next/
+dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp

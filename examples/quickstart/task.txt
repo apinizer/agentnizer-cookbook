@@ -1,0 +1,1 @@
+demo: Add a tiny "hello world" function to the demo module that returns the current time and a friendly greeting. The function should accept an optional name parameter and default to "world" if not provided. Add a unit-test stub that covers the happy path and the empty-name case.

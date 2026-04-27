@@ -1,0 +1,45 @@
+# .claude/profiles/frontend.yaml
+# Example user-interface module.
+# Replace command bodies with whatever your stack uses.
+
+module: frontend
+type: user_interface
+default_risk_level: LOW
+
+paths:
+  - "apps/frontend/**"
+
+build:
+  command: "<your build command for the frontend module>"
+  cwd: "apps/frontend"
+
+test:
+  command: "<your test command for the frontend module>"
+  cwd: "apps/frontend"
+
+lint:
+  command: "<your lint command for the frontend module>"
+  cwd: "apps/frontend"
+
+manifest_check:
+  performance:
+    - "Bundle size monitored — no large dependencies added without justification?"
+    - "Memoization on expensive components / lists?"
+    - "Server-rendered where possible, client-rendered only when necessary?"
+  thread_safety:
+    - "No DOM mutation outside the framework's lifecycle?"
+    - "State management uses immutable updates?"
+  safety:
+    - "No secrets in the client bundle (only public configuration is shipped)?"
+    - "Untrusted HTML never rendered without sanitization?"
+    - "CSP / equivalent headers configured?"
+  observability:
+    - "Client errors reported to an error-tracking service?"
+    - "Key user interactions tracked where needed?"
+
+depends_on: []
+
+notes: |
+  User-interface example. Keep an eye on bundle size and on which work
+  happens client-side vs server-side. Don't ship secrets in the client
+  bundle.

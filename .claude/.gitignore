@@ -1,0 +1,5 @@
+# Secret files — never commit
+.env
+scheduled_tasks.lock
+state/
+*.log

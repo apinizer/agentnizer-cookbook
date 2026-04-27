@@ -1,0 +1,51 @@
+# .claude/profiles/connectors.yaml
+# Example integration / adapter-layer module.
+# Replace command bodies with whatever your stack uses.
+
+module: connectors
+type: integration
+default_risk_level: MEDIUM
+
+paths:
+  - "apps/connectors/**"
+
+build:
+  command: "<your build command for the connectors module>"
+  cwd: "apps/connectors"
+
+test:
+  command: "<your test command for the connectors module>"
+
+lint:
+  command: "<your lint command for the connectors module>"
+
+cascade:
+  triggers:
+    - worker
+  note: "A connector change may affect worker downstream."
+
+manifest_check:
+  performance:
+    - "Connection pooling per connector instance?"
+    - "Outbound calls non-blocking?"
+    - "Rate-limit handled gracefully (exponential backoff)?"
+  thread_safety:
+    - "Connector adapter stateless?"
+    - "Credentials never cached in module-level state?"
+  safety:
+    - "Inbound webhook signatures verified before processing?"
+    - "Secrets redacted from all log output?"
+    - "Rate-limit enforced to prevent API abuse?"
+    - "SSRF prevention: outbound URLs validated against allow-list?"
+  observability:
+    - "Every external call logged with provider name, latency, status?"
+    - "Error responses from external APIs fully logged?"
+    - "Circuit-breaker state transitions logged?"
+
+depends_on:
+  - shared
+
+notes: |
+  Integration example. Each adapter should implement the project's
+  connector contract independently — never share credentials across
+  tenants. Every outbound call is an audit-trail entry.

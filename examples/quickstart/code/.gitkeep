@@ -1,0 +1,3 @@
+# This directory is where the demo module's "code" would live. The
+# developer agent will write into here when running the quickstart task.
+# Empty on a fresh checkout.
