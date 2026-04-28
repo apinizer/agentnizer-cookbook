@@ -19,7 +19,7 @@ Header row required. Columns (in order, semicolon- or comma-separated):
 ```
 task_type;title;description;module
 bug;Login button does nothing on mobile;Tested on Safari iOS 18; the click does not register;frontend
-feature;Webhook endpoint for inbound events;Accept signed JSON, queue for processing;manager
+feature;Webhook endpoint for inbound events;Accept signed JSON, queue for processing;backend
 improve;Drop dead config flags;Several flags read by no module; remove and update profile;shared
 ```
 
@@ -60,7 +60,7 @@ The user reviews and confirms the order before any `team.sh start` calls.
 ```
 Imported 7 tasks:
   [1] 20260427-1432-lgn  bug      module=frontend  → queued
-  [2] 20260427-1433-whk  feature  module=manager   → queued
+  [2] 20260427-1433-whk  feature  module=backend   → queued
   ...
 
 Daemon is now running. Watch with: ./team.sh status

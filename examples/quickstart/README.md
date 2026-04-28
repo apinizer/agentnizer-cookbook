@@ -82,7 +82,7 @@ your machine**. You're ready to drop your real profiles in.
 ## After this works
 
 Replace `.claude/profiles/demo.yaml` with profiles for your real modules
-(see the existing `manager.yaml`, `worker.yaml`, etc. as templates), then
+(see the existing `backend.yaml`, `worker.yaml`, `frontend.yaml`, `shared.yaml` as templates), then
 run `./team.sh start` against a real task in your codebase.
 
 You can leave the `demo.yaml` profile in place — it stays harmless, and

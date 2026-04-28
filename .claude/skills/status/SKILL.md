@@ -29,14 +29,14 @@ Daemon: RUNNING (pid 47213, started 2026-04-27T14:32:00Z, uptime 0:14:22)
 
 Active Tasks (1):
 ID                        MODULE       STATUS         OWNER             UPTIME
-20260427-1432-hlt         manager      reviewing      reviewer          0:01:23
-20260427-1432-hlt         manager      reviewing      tester            0:01:23
-20260427-1432-hlt         manager      reviewing      security_reviewer 0:01:23
+20260427-1432-hlt         backend      reviewing      reviewer          0:01:23
+20260427-1432-hlt         backend      reviewing      tester            0:01:23
+20260427-1432-hlt         backend      reviewing      security_reviewer 0:01:23
 
 Recent Completed (last 5):
 ID                        MODULE       OUTCOME    DURATION   TOKENS
 20260427-1240-cfg         shared       done       0:08:11    42k
-20260427-1130-rbc         manager      done       0:11:42    63k
+20260427-1130-rbc         backend      done       0:11:42    63k
 ==============================
 ```
 

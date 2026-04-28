@@ -1,25 +1,25 @@
-# .claude/profiles/manager.yaml
-# Example "manager" / control-plane module.
-# Replace command bodies with whatever your stack uses.
+# .claude/profiles/backend.yaml
+# Example "backend" / API-server module.
+# Rename and replace command bodies to match your project.
 
-module: manager
-type: control_plane
+module: backend
+type: api_server
 default_risk_level: MEDIUM
 
 # Files this profile claims (used by /verify and the after-code-change hook
 # to figure out which module a changed file belongs to).
 paths:
-  - "apps/manager/**"
+  - "apps/backend/**"
 
 build:
-  command: "<your build command for the manager module>"
-  cwd: "apps/manager"
+  command: "<your build command for the backend module>"
+  cwd: "apps/backend"
 
 test:
-  command: "<your test command for the manager module>"
+  command: "<your test command for the backend module>"
 
 lint:
-  command: "<your lint command for the manager module>"
+  command: "<your lint command for the backend module>"
 
 # Optional: full smoke and e2e commands for the qa agent.
 # smoke:
@@ -53,6 +53,6 @@ depends_on:
   - shared
 
 notes: |
-  This is the control-plane example. RBAC + tenant isolation should be
-  non-negotiable for any manager-shaped module. Every state-changing
-  endpoint should produce an audit log entry.
+  Backend / API server example. Authorization checks and audit logging
+  on state-changing endpoints are usually non-negotiable for production
+  systems — adapt the manifest_check items to match your auth model.

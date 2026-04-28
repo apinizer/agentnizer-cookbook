@@ -241,11 +241,11 @@ What this looks like on disk while it's running — five rows in `team.sh status
 ```
 Active Tasks (1):
 ID                       MODULE      STATUS      OWNER                UPTIME
-20260427-1432-hlt        manager     reviewing   review-correctness   0:01:23
-20260427-1432-hlt        manager     reviewing   review-convention    0:01:23
-20260427-1432-hlt        manager     reviewing   review-quality       0:01:23
-20260427-1432-hlt        manager     reviewing   tester               0:01:23
-20260427-1432-hlt        manager     reviewing   security_reviewer    0:01:23
+20260427-1432-hlt        backend     reviewing   review-correctness   0:01:23
+20260427-1432-hlt        backend     reviewing   review-convention    0:01:23
+20260427-1432-hlt        backend     reviewing   review-quality       0:01:23
+20260427-1432-hlt        backend     reviewing   tester               0:01:23
+20260427-1432-hlt        backend     reviewing   security_reviewer    0:01:23
 ```
 
 ---
@@ -307,7 +307,7 @@ If those files exist with sane content, **the pipeline works on your box**. Full
 Once the demo passes, replace the example profiles with ones for your real modules:
 
 ```bash
-# Use .claude/profiles/manager.yaml / worker.yaml / shared.yaml as templates
+# Use .claude/profiles/backend.yaml / worker.yaml / shared.yaml as templates
 $EDITOR .claude/profiles/<your-module>.yaml
 
 # Hand the team a real task in your repo
@@ -371,11 +371,9 @@ See [`.claude/profiles/README.md`](.claude/profiles/README.md) for what each pro
     │
     ├── profiles/                    # per-module build/test/manifest config
     │   ├── shared.yaml               # cross-cutting library
-    │   ├── manager.yaml              # control-plane example
-    │   ├── worker.yaml               # data-plane example
-    │   ├── frontend.yaml             # UI example
-    │   ├── connectors.yaml           # integration-layer example
-    │   └── providers.yaml            # external-service-adapter example
+    │   ├── backend.yaml              # API server example
+    │   ├── worker.yaml               # background-job example
+    │   └── frontend.yaml             # UI example
     │   # rename / replace these to match your project's modules
     │
     └── learned-lessons/             # retrospective writes here, tuner reads

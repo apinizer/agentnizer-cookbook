@@ -22,10 +22,9 @@ lint:
 # When the shared library changes, every downstream module should re-test.
 cascade:
   triggers:
-    - manager
+    - backend
     - worker
-    - connectors
-    - providers
+    - frontend
   note: "All downstream modules depend on this — a breaking change here breaks everything."
 
 manifest_check:

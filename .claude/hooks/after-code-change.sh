@@ -32,28 +32,21 @@ fi
 MODULE="unknown"
 
 # Adapt the patterns below to match your project's module layout.
+# These match the example profiles shipped in .claude/profiles/.
 
 if echo "$CHANGED_FILE" | grep -q "/apps/worker/"; then
     MODULE="worker"
-    echo "[HOOK] ⚠ Worker module changed. Concurrency + idempotency + advisory-lock check required."
-
-elif echo "$CHANGED_FILE" | grep -q "/apps/providers/"; then
-    MODULE="providers"
-    echo "[HOOK] ⚠ Provider adapter changed. Review fallback chain + rate-limit tests."
+    echo "[HOOK] ⚠ Worker module changed. Concurrency + idempotency check recommended."
 
 elif echo "$CHANGED_FILE" | grep -q "/apps/shared/"; then
     MODULE="shared"
     echo "[HOOK] ⚠ Shared module changed. Cascade test/build needed for downstream modules."
 
-elif echo "$CHANGED_FILE" | grep -q "/apps/manager/"; then
-    MODULE="manager"
+elif echo "$CHANGED_FILE" | grep -q "/apps/backend/"; then
+    MODULE="backend"
 
 elif echo "$CHANGED_FILE" | grep -q "/apps/frontend/"; then
     MODULE="frontend"
-
-elif echo "$CHANGED_FILE" | grep -q "/apps/connectors/"; then
-    MODULE="connectors"
-    echo "[HOOK] ⚠ Connector changed. Worker downstream cascade may be needed."
 fi
 
 echo "[HOOK:$(date +%H:%M:%S)] $MODULE | $(basename "$CHANGED_FILE")"

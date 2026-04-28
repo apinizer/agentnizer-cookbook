@@ -1,10 +1,10 @@
 # Module Profiles — example templates
 
 > **These files are starter templates, not a fixed module set.** The
-> profile names (`manager`, `worker`, `frontend`, `connectors`, `providers`,
-> `shared`) are *example* labels for common architectural roles. You should
-> rename them, drop the ones you don't need, and add ones we don't have —
-> to match your project's actual module layout.
+> profile names (`backend`, `worker`, `frontend`, `shared`) are *example*
+> labels for common architectural roles. Rename them, drop the ones you
+> don't need, add ones we don't have — to match your project's actual
+> module layout.
 
 ## What a profile is
 
@@ -26,11 +26,9 @@ whatever you put there.
 
 | File | Plays the role of | Adapt by |
 |---|---|---|
-| `manager.yaml` | Control-plane / API-server module | Rename to your control-plane module name; replace commands |
-| `worker.yaml` | Data-plane / runtime module | Rename to your worker / job-runner module |
+| `backend.yaml` | API server / REST or GraphQL backend | Rename to your backend module name; replace commands |
+| `worker.yaml` | Background-job / queue-consumer / async-processor module | Rename if your worker module is named differently |
 | `frontend.yaml` | UI module | Rename if your UI directory is named differently |
-| `connectors.yaml` | Integration / external-system adapters | Rename to whatever you call your integration layer |
-| `providers.yaml` | External-service / vendor adapters | Optional — drop if your project doesn't have an adapter layer |
 | `shared.yaml` | Cross-cutting library shared by other modules | Rename to your common-library module |
 
 ## Adapting to your project

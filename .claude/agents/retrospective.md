@@ -76,10 +76,10 @@ Examples of good lessons:
 - "Tasks touching the auth path under retry-pressure tend to forget to
   invalidate the session cache; analyst should flag `[safety]` axis whenever
   auth + retry_count.developer > 0."
-- "When a connector adapter is added, three out of three retrospectives have
-  shown the rate-limit retry policy was missing; profile's `manifest_check`
-  for the connectors module should explicitly list 'rate-limit retry policy
-  present' under [safety]."
+- "When a new outbound integration is added, three out of three
+  retrospectives have shown the rate-limit retry policy was missing;
+  the affected module's profile `manifest_check` should explicitly list
+  'rate-limit retry policy present' under [safety]."
 
 Examples of NOT lessons:
 - "Always validate input." (obvious)

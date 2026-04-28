@@ -53,17 +53,17 @@ If `meta.json.role_done.security_reviewer` is set → exit.
 ### Module-Specific Checks (read from `.claude/profiles/<module>.yaml`'s
 `security_check` section, if present):
 
-Common patterns:
-- **connectors / external integrations** — webhook signature verified?
-  Rate-limit enforced? Secrets redacted from logs?
-- **provider adapters** — API key per-tenant scoped? Cost guard (max-tokens
-  cap)? No key sharing across tenants?
-- **worker / runtime** — no privilege escalation? Sandbox enforced for
-  user-supplied code?
-- **manager / control plane** — RBAC on every endpoint? Tenant row-level
-  security in DB queries?
-- **frontend / UI** — XSS prevention? CSP headers? No secrets in client
-  bundle?
+Common patterns by module type:
+- **External integrations** — inbound webhook signatures verified?
+  Outbound rate-limit enforced? Secrets redacted from logs?
+- **External-service adapters** — credentials scoped per-tenant?
+  Cost / quota guard enforced? No credential sharing across tenants?
+- **Worker / async runtime** — no privilege escalation? Sandbox
+  enforced for any user-supplied code?
+- **Backend / API server** — authorization checked on every endpoint?
+  Tenant isolation enforced in DB queries?
+- **Frontend / UI** — XSS prevention? CSP headers? No secrets in the
+  client bundle?
 
 ## Severity Levels
 

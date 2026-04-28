@@ -157,8 +157,8 @@ ASCII). Two sub-tasks in the same minute → vary the slug.
 
 Read `meta.json.title` + `description`, match against keywords. Use the
 project's profile YAMLs in `.claude/profiles/` to know which modules exist.
-The cookbook ships example modules (`shared`, `manager`, `worker`, `frontend`,
-`connectors`, `providers`); rename or replace these in your project.
+The cookbook ships four example modules (`shared`, `backend`, `worker`,
+`frontend`); rename or replace these to match your project's actual layout.
 
 If multiple modules are touched, set `module` to the primary, list the rest
 in `secondary_modules`.
@@ -183,9 +183,9 @@ level if the task description contains signals like `auth`, `security`,
 #### Manifesto axes
 
 Set 1–3 axes by category:
-- worker / connector → `[performance, thread-safety, observability]`
-- manager / RBAC / auth → `[safety, observability]`
-- provider / adapter → `[performance, observability, safety]`
+- worker / async runtime / integrations → `[performance, thread-safety, observability]`
+- backend / RBAC / auth → `[safety, observability]`
+- external-service adapter → `[performance, observability, safety]`
 - frontend → `[performance, observability]`
 
 ### 5. Update active.json

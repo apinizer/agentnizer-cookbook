@@ -1,6 +1,7 @@
 # .claude/profiles/worker.yaml
-# Example "worker" / data-plane module.
-# Replace command bodies with whatever your stack uses.
+# Example "worker" / background-job module (long-running tasks, queue
+# consumers, async processors).
+# Rename and replace command bodies to match your project.
 
 module: worker
 type: data_plane
@@ -54,11 +55,9 @@ cascade:
 
 depends_on:
   - shared
-  - connectors
-  - providers
 
 notes: |
-  Data-plane example. Concurrency, idempotency, and observability are all
-  critical. The tester is configured to run a separate concurrency test
-  after the main suite — fill in `concurrency_test.command` with your
-  stack's stress-test setup.
+  Background-job / async-processor example. Concurrency, idempotency,
+  and observability are all critical for any job runner. The tester is
+  configured to run a separate concurrency test after the main suite —
+  fill in `concurrency_test.command` with your stack's stress-test setup.
