@@ -60,70 +60,6 @@ Recent Completed (last 5):
 
 That's it. One command. A reviewed, tested, security-scanned, documented PR-ready change on disk — produced by the same agent line-up we use to ship our own work, just with a local-filesystem backend instead of our tracker.
 
-### Why review is a 5-way fan-out, not one big reviewer
-
-A single "review my code" prompt is a coin flip. It catches the *kind* of issue the reviewer happens to focus on first; the rest slip through. We tried it. It didn't ship.
-
-So when the developer ships, the daemon spawns **five independent Claude subprocesses at the same time** against the same diff:
-
-- **`review-correctness`** — bugs, missing edge cases, BS coverage
-- **`review-convention`** — lint / format / style violations
-- **`review-quality`** — DRY, SRP, complexity, dead code
-- **`tester`** — runs the actual test suite
-- **`security-reviewer`** — OWASP + module-specific checks
-
-They don't talk to each other — that's deliberate. No groupthink, no *"the first reviewer said it's fine, I'll skip"*. An orchestrator (`reviewer`) waits for all five, aggregates the verdict, and either passes the task to QA or hands it back to the developer with the blocking findings.
-
-This is the shape, in one diagram:
-
-```mermaid
-flowchart LR
-    Dev["💻 developer<br/>ships diff"] --> Diff{{"the same diff"}}
-    Diff --> RC["🔍 review-correctness<br/><i>bugs / BS coverage</i>"]
-    Diff --> RV["🧹 review-convention<br/><i>lint / style</i>"]
-    Diff --> RQ["⭐ review-quality<br/><i>DRY / SRP / complexity</i>"]
-    Diff --> T["🧪 tester<br/><i>full test suite</i>"]
-    Diff --> S["🛡️ security-reviewer<br/><i>OWASP + module-specific</i>"]
-    RC --> Agg(["🧮 reviewer<br/>aggregator"])
-    RV --> Agg
-    RQ --> Agg
-    T --> Agg
-    S --> Agg
-    Agg -->|all PASS| QA["➡️ qa<br/>(next stage)"]
-    Agg -.->|any FAIL| Retry["↩️ developer retry"]
-
-    classDef parallel fill:#e0f2fe,stroke:#0284c7,color:#000
-    classDef merge fill:#fef3c7,stroke:#f59e0b,color:#000
-    classDef next fill:#dcfce7,stroke:#16a34a,color:#000
-    class RC,RV,RQ,T,S parallel
-    class Agg merge
-    class QA next
-```
-
-And what that *actually looks like* on disk, the moment the fan-out is mid-run — five rows in `team.sh status`, same task ID, five different OWNERs:
-
-```
-$ ./team.sh status
-
-=== Team Status ===
-Daemon: RUNNING (pid 47213, started 14:32:00Z, uptime 0:14:22)
-
-Active Tasks (1):
-ID                       MODULE      STATUS      OWNER                UPTIME
-20260427-1432-hlt        manager     reviewing   review-correctness   0:01:23
-20260427-1432-hlt        manager     reviewing   review-convention    0:01:23
-20260427-1432-hlt        manager     reviewing   review-quality       0:01:23
-20260427-1432-hlt        manager     reviewing   tester               0:01:23
-20260427-1432-hlt        manager     reviewing   security_reviewer    0:01:23
-
-Recent Completed (last 5):
-  20260427-1240-cfg  shared       done   0:08:11  42k
-  20260427-1130-rbc  manager      done   0:11:42  63k
-==============================
-```
-
-Same task ID on five rows, five different OWNERs. That's the pipeline doing five concurrent reads of the same diff. We watch this in a tmux pane while the team works.
-
 ---
 
 ## Who this is for (and who it isn't)
@@ -142,74 +78,17 @@ Same task ID on five rows, five different OWNERs. That's the pipeline doing five
 - You're doing a hackathon project. The setup ratio is wrong — adapt-then-ship beats install-and-go for production work, but a hackathon needs install-and-go.
 - You expect a hosted UI, a button-click experience, or a SaaS dashboard. None of that is here.
 
-We built this for ourselves. We open-sourced it on the off-chance someone else recognizes themselves in it. If you do — welcome. If you don't — there are friendlier introductions out there, and that's fine.
-
-> **A note on what's actually here.** The agent and skill files in `.claude/agents/` and `.claude/skills/` are **surface-level versions** of what we actually run. We've kept the structure, the role names, the state-machine wiring, and enough of the prompts to make the pipeline functional — but the deeper details (full prompt heuristics, our internal coding conventions, our project-specific manifest_check items, accumulated lessons) are not in this repo. The pipeline runs and produces real output; it just won't produce *our* output. Treat this as a working skeleton you specialize on top of, not as a turn-key replica.
-
 ---
 
-## Why this design?
+## Why we open-sourced this
 
-Most "agent orchestration" demos break the moment you try them on real work. Three things make this one production-grade:
+Two reasons, both honest:
 
-### 1. The filesystem is the state machine
+**1. The patterns are useful and we'd want to read them.** Multi-agent decomposition, parallel review fan-out, manifesto-graded change, idempotent state, crash-resumable daemons — these are mechanics we figured out by running this for months. None of them are individually novel; the value is in seeing them wired together in something that actually ships work. If you're building an AI dev pipeline today, this saves you the mistakes we made.
 
-Most AI pipelines invent custom state engines, message queues, or run everything in-process. We do none of that. The whole pipeline lives in a single directory:
+**2. We're using this repo as a milestone marker.** We're paving a longer road. We're not ready to talk about the rest of it yet — but the cookbook is the first concrete artifact on that road, the part we can publish without leaking project specifics. If anything here resonates, you're probably the kind of person we'll want to hear from when we're ready to talk about what comes next.
 
-```
-.state/
-├── active.json                       # the DAG: what's queued, in flight, blocked
-├── completed.jsonl                   # append-only outcome log
-├── locks/team.lock                   # daemon pid; prevents two daemons
-└── tasks/<task-id>/
-    ├── meta.json                     # status + role_done flags + retry counts
-    ├── analysis.md                   # analyst output
-    ├── design.md                     # architect output (Sprint Contract)
-    ├── progress.md                   # developer output
-    ├── reviews/{correctness,convention,quality,security}.json
-    ├── tests.md                      # tester output
-    ├── qa.md                         # qa output
-    ├── docs.md                       # documenter output
-    └── handoffs.jsonl                # inter-agent messages
-```
-
-`meta.json.status` is the dial. `meta.json.role_done.<role>` is **idempotency**: if the daemon restarts mid-pipeline, every agent that's already finished sees its flag and exits in 50ms. Nothing re-runs. Nothing duplicates.
-
-You can `cat meta.json` and read what the team is doing. You can `tail -f handoffs.jsonl` and watch the conversation. You can `git diff .state/` and review what the AI just decided. **No black box.**
-
-### 2. Upstream errors compound — so upstream uses bigger models
-
-Every downstream agent inherits the upstream agent's mistakes. The analyst wrote a wrong edge case → the architect designs against a wrong spec → the developer ships a wrong feature → the reviewer rubber-stamps it.
-
-So we put **Opus** on the upstream and security-critical roles, **Sonnet** on the structured downstream roles. Zero Haiku — we tested; cheap models compound errors faster than they save dollars.
-
-| Role | Model | Why |
-|---|---|---|
-| `analyst`, `architect`, `developer`, `qa`, `security-reviewer` | Opus | Upstream errors are catastrophic; security findings need real reasoning |
-| `review-correctness` | Opus | Catches the bugs that matter |
-| `planner`, `reviewer`, `review-convention`, `review-quality`, `tester`, `documenter`, `retrospective` | Sonnet | Structured pattern matching; clear inputs and outputs |
-
-### 3. Three reviewers in parallel
-
-When the developer ships, **three reviewer agents spawn at once** against the same diff:
-
-- **review-correctness** (Opus) — catches the actual bugs: BS coverage, thread-safety, perf
-- **review-convention** (Sonnet) — style/lint deltas (whatever your linter says)
-- **review-quality** (Sonnet) — DRY, SRP, complexity, dead code
-
-Plus the **tester** runs the test suite and the **security-reviewer** does an OWASP pass. All five run as separate Claude subprocesses, in parallel, on the same diff.
-
-This is the "wow" moment when you watch `team.sh status` during review:
-
-```
-Active Tasks (1):
-ID                        MODULE       STATUS         OWNER             UPTIME
-20260427-1432-hlt         manager      reviewing      reviewer          0:01:23
-20260427-1432-hlt         manager      reviewing      tester            0:01:23
-20260427-1432-hlt         manager      reviewing      security_reviewer 0:01:23
-```
-
-Same task, three rows, three Claude subprocesses chewing on the same diff at the same time.
+> **What you get:** the working skeleton — agent roles, daemon, state machine, parallel review wiring. **What you don't get:** the deeper prompt heuristics, our internal conventions, accumulated lessons. The pipeline runs and produces real output; it just won't produce *our* output. Specialize on top.
 
 ---
 
@@ -278,28 +157,127 @@ queued → analyzing → analyzed → designing → designed → developing → 
 
 ---
 
-## Quick Start
+## Why this design?
 
-### 5-minute confidence check (recommended)
+Three things make this pipeline production-grade rather than a fancy demo:
 
-Before adapting anything to your real codebase, **run the bundled
-quickstart example** to confirm the pipeline works end-to-end on your
-machine:
+### 1. The filesystem is the state machine
+
+Most AI pipelines invent custom state engines, message queues, or run everything in-process. We do none of that. The whole pipeline lives in a single directory:
+
+```
+.state/
+├── active.json                       # the DAG: what's queued, in flight, blocked
+├── completed.jsonl                   # append-only outcome log
+├── locks/team.lock                   # daemon pid; prevents two daemons
+└── tasks/<task-id>/
+    ├── meta.json                     # status + role_done flags + retry counts
+    ├── analysis.md                   # analyst output
+    ├── design.md                     # architect output (Sprint Contract)
+    ├── progress.md                   # developer output
+    ├── reviews/{correctness,convention,quality,security}.json
+    ├── tests.md                      # tester output
+    ├── qa.md                         # qa output
+    ├── docs.md                       # documenter output
+    └── handoffs.jsonl                # inter-agent messages
+```
+
+`meta.json.status` is the dial. `meta.json.role_done.<role>` is **idempotency**: if the daemon restarts mid-pipeline, every agent that's already finished sees its flag and exits in 50ms. Nothing re-runs. Nothing duplicates.
+
+You can `cat meta.json` and read what the team is doing. You can `tail -f handoffs.jsonl` and watch the conversation. You can `git diff .state/` and review what the AI just decided. **No black box.**
+
+### 2. Upstream errors compound — so upstream uses bigger models
+
+Every downstream agent inherits the upstream agent's mistakes. The analyst wrote a wrong edge case → the architect designs against a wrong spec → the developer ships a wrong feature → the reviewer rubber-stamps it.
+
+So we put **Opus** on the upstream and security-critical roles, **Sonnet** on the structured downstream roles. Zero Haiku — we tested; cheap models compound errors faster than they save dollars.
+
+| Role | Model | Why |
+|---|---|---|
+| `analyst`, `architect`, `developer`, `qa`, `security-reviewer` | Opus | Upstream errors are catastrophic; security findings need real reasoning |
+| `review-correctness` | Opus | Catches the bugs that matter |
+| `planner`, `reviewer`, `review-convention`, `review-quality`, `tester`, `documenter`, `retrospective` | Sonnet | Structured pattern matching; clear inputs and outputs |
+
+### 3. Review is a 5-way fan-out, not one big reviewer
+
+A single "review my code" prompt is a coin flip. It catches the *kind* of issue the reviewer happens to focus on first; the rest slip through. We tried it. It didn't ship.
+
+So when the developer ships, the daemon spawns **five independent Claude subprocesses at the same time** against the same diff:
+
+- **`review-correctness`** (Opus) — bugs, missing edge cases, BS coverage
+- **`review-convention`** (Sonnet) — lint / format / style violations
+- **`review-quality`** (Sonnet) — DRY, SRP, complexity, dead code
+- **`tester`** (Sonnet) — runs the actual test suite
+- **`security-reviewer`** (Opus) — OWASP + module-specific checks
+
+They don't talk to each other — that's deliberate. No groupthink, no *"the first reviewer said it's fine, I'll skip"*. An orchestrator (`reviewer`) waits for all five, aggregates the verdict, and either passes the task to QA or hands it back to the developer with the blocking findings.
+
+```mermaid
+flowchart LR
+    Dev["💻 developer<br/>ships diff"] --> Diff{{"the same diff"}}
+    Diff --> RC["🔍 review-correctness<br/><i>bugs / BS coverage</i>"]
+    Diff --> RV["🧹 review-convention<br/><i>lint / style</i>"]
+    Diff --> RQ["⭐ review-quality<br/><i>DRY / SRP / complexity</i>"]
+    Diff --> T["🧪 tester<br/><i>full test suite</i>"]
+    Diff --> S["🛡️ security-reviewer<br/><i>OWASP + module-specific</i>"]
+    RC --> Agg(["🧮 reviewer<br/>aggregator"])
+    RV --> Agg
+    RQ --> Agg
+    T --> Agg
+    S --> Agg
+    Agg -->|all PASS| QA["➡️ qa<br/>(next stage)"]
+    Agg -.->|any FAIL| Retry["↩️ developer retry"]
+
+    classDef parallel fill:#e0f2fe,stroke:#0284c7,color:#000
+    classDef merge fill:#fef3c7,stroke:#f59e0b,color:#000
+    classDef next fill:#dcfce7,stroke:#16a34a,color:#000
+    class RC,RV,RQ,T,S parallel
+    class Agg merge
+    class QA next
+```
+
+What this looks like on disk while it's running — five rows in `team.sh status`, same task ID, five different OWNERs:
+
+```
+Active Tasks (1):
+ID                       MODULE      STATUS      OWNER                UPTIME
+20260427-1432-hlt        manager     reviewing   review-correctness   0:01:23
+20260427-1432-hlt        manager     reviewing   review-convention    0:01:23
+20260427-1432-hlt        manager     reviewing   review-quality       0:01:23
+20260427-1432-hlt        manager     reviewing   tester               0:01:23
+20260427-1432-hlt        manager     reviewing   security_reviewer    0:01:23
+```
+
+---
+
+## Setup
+
+Three commands to get the team on your machine:
 
 ```bash
+# 1. Clone
 git clone https://github.com/apinizer/agentnizer-cookbook
 cd agentnizer-cookbook
 
-# Install Claude Code if you don't have it.
+# 2. Install Claude Code (if you don't have it)
 npm install -g @anthropic-ai/claude-code
 
-# Drop in the demo profile (build/test/lint are all harmless `echo` calls).
+# 3. Drop in the demo profile (build/test/lint are harmless `echo` calls,
+#    so the pipeline can run end-to-end without you wiring up a real toolchain)
 cp examples/quickstart/profiles/demo.yaml .claude/profiles/demo.yaml
+```
 
-# Hand the team a tiny task.
+Optional: `cp .claude/.env.example .claude/.env` if you want Slack notifications. The pipeline runs fine without Slack.
+
+---
+
+## Run your first task
+
+```bash
+# Hand the team a tiny task
 ./team.sh start "$(cat examples/quickstart/task.txt)"
 
-# Watch the team work in another shell.
+# In another shell, watch it work
 watch -n 2 ./team.sh status
 ```
 
@@ -311,22 +289,7 @@ cat .state/tasks/*/design.md          # the Sprint Contract
 cat .state/tasks/*/reviews/*.json     # the verdicts
 ```
 
-If those files exist, the pipeline works on your box. Full walkthrough +
-troubleshooting in [`examples/quickstart/README.md`](examples/quickstart/README.md).
-
-### Then adapt to your real project
-
-```bash
-cp .claude/.env.example .claude/.env
-# Optional: edit if you want Slack notifications.
-
-# Replace the example profiles with profiles for your real modules.
-# Use .claude/profiles/manager.yaml / worker.yaml / shared.yaml as templates.
-$EDITOR .claude/profiles/<your-module>.yaml
-
-# Hand the team a real task in your repo.
-./team.sh start "<your real task description>"
-```
+If those files exist with sane content, **the pipeline works on your box**. Full walkthrough + reference output + troubleshooting in [`examples/quickstart/README.md`](examples/quickstart/README.md).
 
 ### Daemon controls
 
@@ -336,8 +299,22 @@ $EDITOR .claude/profiles/<your-module>.yaml
 ./team.sh pause            # finish in-flight agents, no new spawns
 ./team.sh resume           # resume spawning
 ./team.sh stop             # SIGTERM the daemon (graceful 30s, then SIGKILL)
-./team.sh resume-daemon    # restart after a crash — role_done flags pick up
+./team.sh resume-daemon    # restart after a crash — role_done flags pick up where it left off
 ```
+
+### Then adapt to your real project
+
+Once the demo passes, replace the example profiles with ones for your real modules:
+
+```bash
+# Use .claude/profiles/manager.yaml / worker.yaml / shared.yaml as templates
+$EDITOR .claude/profiles/<your-module>.yaml
+
+# Hand the team a real task in your repo
+./team.sh start "<your real task description>"
+```
+
+See [`.claude/profiles/README.md`](.claude/profiles/README.md) for what each profile field does and how to tune it for your stack.
 
 ---
 
@@ -421,32 +398,6 @@ Every change that flows through the pipeline is graded against **four axes**. Th
 ```
 
 These aren't aspirational. They're enforced. Reviewer reads `meta.json.manifesto_axes` (planner sets these), checks the change covers each tagged axis, and fails the review if any is missing.
-
----
-
-## How "wow" actually works (the demo loop)
-
-Run this on a fresh checkout. It's the demo.
-
-```bash
-# 1. Kick off a real feature in your repo
-./team.sh start "<describe the feature you actually want>"
-
-# 2. Watch the team work
-watch -n 2 ./team.sh status
-# You'll see: planner → analyst → architect → developer → (reviewer + tester + security-reviewer in parallel) → qa → documenter → retrospective
-
-# 3. Read what they wrote
-cat .state/tasks/*/analysis.md       # the spec
-cat .state/tasks/*/design.md         # the Sprint Contract
-cat .state/tasks/*/reviews/*.json    # the 3 review verdicts
-cat .state/tasks/*/qa.md             # the E2E sanity check
-git diff                             # the actual code
-
-# 4. Hand it to a teammate. They review .state/ + the diff. Done.
-```
-
-The first time you watch three reviewer subprocesses line up against the same diff, you'll get it. We see this every day.
 
 ---
 
