@@ -24,13 +24,15 @@ In one sentence: a **13-agent assembly line** that takes a plain-English task an
 
 ### Cookbook vs what we actually run
 
-**Same in both:** 13-agent assembly line · parallel review fan-out · manifesto axes (`performance` / `thread-safety` / `safety` / `observability`) · Sprint Contract pattern · idempotency · retry caps · two human gates (design + QA).
-
-**Different:**
-
-|  | In production | In this cookbook |
+| Aspect | In production | In this cookbook |
 |---|---|---|
-| **State machine** | Issue tracker drives status transitions — see [the use-case doc](docs/use-case-tracker-driven-pipeline.md) | `.state/` filesystem |
+| 13-agent assembly line | ✓ | ✓ |
+| Parallel review fan-out (3 reviewers + tester + security) | ✓ | ✓ |
+| Manifesto axes (perf / thread-safety / safety / observability) | ✓ | ✓ |
+| Sprint Contract pattern | ✓ | ✓ |
+| Idempotency + retry caps | ✓ | ✓ |
+| Two human gates (design + QA) | ✓ | ✓ |
+| **State machine** | Issue tracker — see [use-case doc](docs/use-case-tracker-driven-pipeline.md) | `.state/` filesystem |
 | **Agent prompts** | Tuned to our stack and team rules | Generic, you adapt |
 | **Coding conventions / pitfalls** | Baked into every prompt | Not included |
 | **Learned lessons** | Months accumulated | Empty templates |
