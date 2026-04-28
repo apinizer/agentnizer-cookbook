@@ -62,13 +62,33 @@ That's it. One command. A reviewed, tested, security-scanned, documented PR-read
 
 ### What it looks like when the team is busy
 
-The "wow" moment is the **review fan-out**: developer ships → 3 reviewer agents + tester + security-reviewer all spawn at once against the same diff. Five Claude subprocesses on one task, in parallel.
+The "wow" moment is the **review fan-out**: when the developer ships, **five Claude subprocesses spawn at once against the same diff** — three reviewers (correctness, convention, quality), the tester, and the security-reviewer. They run in parallel; the orchestrator waits for all five and then aggregates the verdict.
 
-<p align="center">
-  <img src="docs/media/pipeline-overview.png" alt="AI Pipeline overview — single task fans out to five parallel agents" width="800">
-</p>
+```mermaid
+flowchart LR
+    Dev["💻 developer<br/>ships diff"] --> Diff{{"the same diff"}}
+    Diff --> RC["🔍 review-correctness<br/><i>bugs / BS coverage</i>"]
+    Diff --> RV["🧹 review-convention<br/><i>lint / style</i>"]
+    Diff --> RQ["⭐ review-quality<br/><i>DRY / SRP / complexity</i>"]
+    Diff --> T["🧪 tester<br/><i>full test suite</i>"]
+    Diff --> S["🛡️ security-reviewer<br/><i>OWASP + module-specific</i>"]
+    RC --> Agg(["🧮 reviewer<br/>aggregator"])
+    RV --> Agg
+    RQ --> Agg
+    T --> Agg
+    S --> Agg
+    Agg -->|all PASS| QA["➡️ qa<br/>(next stage)"]
+    Agg -.->|any FAIL| Retry["↩️ developer retry"]
 
-A still capture of the same moment, in plain text, looks like this:
+    classDef parallel fill:#e0f2fe,stroke:#0284c7,color:#000
+    classDef merge fill:#fef3c7,stroke:#f59e0b,color:#000
+    classDef next fill:#dcfce7,stroke:#16a34a,color:#000
+    class RC,RV,RQ,T,S parallel
+    class Agg merge
+    class QA next
+```
+
+A still capture of the same moment, in plain text from `team.sh status`:
 
 ```
 $ ./team.sh status

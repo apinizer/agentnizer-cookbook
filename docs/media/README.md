@@ -1,13 +1,16 @@
 # Media — visual assets
 
-Visual assets referenced from the top-level `README.md`. The repo ships
-without binaries; drop your generated images in here.
+Visual assets for the README, social previews, and any future blog
+posts. The README itself uses **Mermaid diagrams** for in-line technical
+content (they render natively on GitHub and stay in sync with the docs).
+Static images here are for context that Mermaid can't carry — terminal
+captures, hero / social-preview images, screenshots of the running team.
 
-## Expected files
+## Files
 
-| File | Purpose | Where it's referenced |
-|------|---------|------------------------|
-| `pipeline-overview.png` | Hero image — the 13-agent flow with the parallel fan-out as focal point | README "What it looks like when the team is busy" |
+| File | Purpose | Status |
+|------|---------|--------|
+| `pipeline-overview.png` | Hero / social-preview image of the 13-agent flow | optional — set as the repo's [GitHub social preview](https://github.com/apinizer/agentnizer-cookbook/settings) for OG cards on Twitter / LinkedIn |
 
 ## Generation
 
