@@ -98,151 +98,58 @@ loop becomes a tracker poll instead of a filesystem scan.
 ## Example flow
 
 The following is a *representative* end-to-end. Status names are generic;
-your tracker's terminology may differ. The numbers in brackets like
-`[start_triage]`, `[review_pass]` are illustrative transition IDs — your
-tracker has its own IDs.
+your tracker's terminology will differ.
 
-```
-                          AI PIPELINE — TRACKER-DRIVEN VARIANT
-                          ====================================
+```mermaid
+flowchart TD
+    Start([Issue created<br/>label: ai-pipeline]) --> ToDo[TO DO]
+    ToDo -->|daemon picks up| Triage
+    ToDo -.->|human override<br/>one-off manual fix| InProg
 
-  ┌─────────┐
-  │ TO DO   │  An issue is created (manually, or via /bugfix /feature /improve).
-  │         │  Labels: ai-pipeline
-  └────┬────┘
-       │
-       │ [start_triage]                                [todo_to_in_progress]
-       │ (daemon, automatic)                           (human override; lets a
-       │                                                human bypass triage and
-       │                                                go straight to dev mode
-       │                                                — useful for one-off
-       ▼                                                manual fixes)
-  ┌──────────┐                                         │
-  │ TRIAGE   │                                         ▼
-  │          │                                   ┌────────────┐
-  │ 🤖 issue-fixer  (reads tracker description)  │IN PROGRESS │
-  │ Output:  🤖 AI Analysis comment              │ (manual)   │
-  │ Labels:  module:<m>, complexity:<S/M/L/XL>,  └────────────┘
-  │          ai-ready                                  ▲
-  └──────┬───────────┐                                 │
-         │           │                                 │
-         │ [analysis │ [info_required]                 │
-         │ completed]│                                 │
-         ▼           ▼                                 │
-  ┌──────────┐ ┌───────────────┐                       │
-  │ DESIGN   │ │ AWAITING INFO │                       │
-  │          │ │               │                       │
-  │ 📐 architect                │                       │
-  │ Reads:  🤖 AI Analysis      │ [info_acquired]      │
-  │ Writes: 📐 Technical Design │ (a human posts a    │
-  │ + Sprint Contract           │  reply comment;     │
-  │ Adds label: ai-design-done  │  daemon detects it  │
-  └──────┬─────────┐             │  and re-triggers   │
-         │         │             │  the analyst)      │
-         │         │             │─────────┐          │
-         │         │             └─────────┘          │
-         │         │                                  │
-         │ [design │ [insufficient_design]            │
-         │ confirmed] │                               │
-         │ ⬛ HUMAN GATE                              │
-         │ A reviewer reads the design,               │
-         │ either confirms (→ In Progress)            │
-         │ or rejects (→ back to Triage              │
-         │ for re-analysis)                           │
-         ▼                                            │
-  ┌────────────┐                                      │
-  │IN PROGRESS │ ◄─── review FAIL ────────────────────┤
-  │            │ ◄─── security FAIL ──────────────────┤
-  │ 💻 developer                                      │
-  │ Reads:  📐 Technical Design                       │
-  │ Writes: 💻 Implementation Summary                 │
-  │ Branch: <prefix>/<issue-key>                      │
-  └─────┬──────┘                                      │
-        │                                             │
-        │ [development_completed]                     │
-        ▼                                             │
-  ┌─────────────┐                                     │
-  │ CODE REVIEW │                                     │
-  │             │                                     │
-  │ 🔍 reviewer (or fan-out to 3 sub-reviewers as     │
-  │              in the local cookbook — this         │
-  │              variant works either way)            │
-  │ Reads:  💻 Impl. Summary + 📐 Sprint Contract     │
-  │ Writes: 🔍 Code Review (PASS/FAIL)                │
-  └─┬─────┬─────┘                                     │
-    │     │                                           │
-    │     │ [review_fail] (max 3 retries) ────────────┘
-    │     │                  (label: ai-retry:N)
-    │ [review_pass]
-    ▼
-  ┌──────────────────┐
-  │ SECURITY REVIEW  │
-  │                  │
-  │ 🛡️ security-reviewer
-  │ Reads:  💻 Impl. Summary + 🔍 Code Review
-  │ Writes: 🛡️ Security Review (PASS/FAIL)
-  │ CRITICAL/HIGH → Slack alert (unconditional)
-  └─┬─────┬──────────┘
-    │     │
-    │     │ [security_fail] (max 2 retries) ──────────┐
-    │ [security_pass]                                 │
-    ▼                                                 │
-  ┌──────────┐                                        │
-  │ TESTING  │                                        │
-  │          │                                        │
-  │ 🧪 tester                                         │
-  │ Reads:  💻 Impl. Summary + 📐 Sprint Contract     │
-  │ Writes: 🧪 Test Results (PASS/FAIL)               │
-  │ Cascade tests for shared-library changes          │
-  │ Concurrency tests for runtime modules             │
-  └─┬─────┬─┘                                         │
-    │     │                                           │
-    │     │ [test_fail] (max 3 retries) ──────────────┤
-    │ [test_pass]                                     │
-    ▼                                                 │
-  ┌──────────────┐                                    │
-  │ READY FOR QA │                                    │
-  │              │                                    │
-  │ ⬛ HUMAN GATE                                     │
-  │ A QA engineer (or product) actually exercises     │
-  │ the running app, validates acceptance criteria.   │
-  │ Comment with verdict.                             │
-  └─┬────┬──────┘                                     │
-    │    │                                            │
-    │    │ [qa_fail] (back to In Progress) ───────────┤
-    │ [qa_pass]                                       │
-    ▼                                                 │
-  ┌────────────────┐                                  │
-  │ DOCUMENTATION  │                                  │
-  │                │                                  │
-  │ 📝 documenter                                     │
-  │ Reads:  All preceding pipeline comments           │
-  │ Writes: 📝 Documentation Summary                  │
-  │ Branch: <docs-prefix>/<issue-key>                 │
-  └─┬──────┬───────┘                                  │
-    │      │                                          │
-    │      │ [doc_issue_found] ─────────────────────  │
-    │ [doc_completed]                                 │
-    ▼
-  ┌────────────────┐
-  │ DEVELOP BRANCH │
-  │                │
-  │ Merge to develop → CI/CD pipeline runs:           │
-  │ lint, SAST, unit tests, build, regression,       │
-  │ E2E, DAST, dependency-vuln scan.                  │
-  │ (This is your existing CI; the AI pipeline        │
-  │  hands off to it here.)                           │
-  └──────┬─────────┘
-         │
-         │ [code_merged] (human or CI)
-         ▼
-  ┌──────────┐
-  │   DONE   │
-  │          │
-  │ 🔄 retrospective (async, fire-and-forget)         │
-  │ Reads:  All pipeline comments + label history     │
-  │ Writes: append to learned-lessons/<module>.md     │
-  └──────────┘
+    Triage["TRIAGE<br/><i>issue-fixer</i><br/>writes 🤖 AI Analysis<br/>sets module / complexity labels"]
+    Triage -->|analysis ok| Design
+    Triage -->|info needed| Awaiting[AWAITING INFO]
+    Awaiting -->|human reply| Triage
+
+    Design["DESIGN<br/><i>architect</i><br/>writes 📐 Technical Design + Sprint Contract<br/>label: ai-design-done"]
+    Design --> DesignGate{⬛ Human Gate<br/>design approval}
+    DesignGate -->|approved| InProg
+    DesignGate -->|rejected| Triage
+
+    InProg["IN PROGRESS<br/><i>developer</i><br/>writes 💻 Implementation Summary<br/>branch: prefix/issue-key"]
+    InProg --> CodeReview
+
+    CodeReview["CODE REVIEW<br/><i>reviewer</i> (or 3-way fan-out as in the local cookbook)<br/>writes 🔍 Code Review"]
+    CodeReview -->|PASS| SecReview
+    CodeReview -->|FAIL — max 3 retries<br/>label: ai-retry:N| InProg
+
+    SecReview["SECURITY REVIEW<br/><i>security-reviewer</i><br/>writes 🛡️ Security Review<br/>CRITICAL/HIGH → Slack alert"]
+    SecReview -->|PASS| Testing
+    SecReview -->|FAIL — max 2 retries| InProg
+
+    Testing["TESTING<br/><i>tester</i><br/>writes 🧪 Test Results<br/>cascade + concurrency tests"]
+    Testing -->|PASS| ReadyQA
+    Testing -->|FAIL — max 3 retries| InProg
+
+    ReadyQA{⬛ Human Gate<br/>QA acceptance}
+    ReadyQA -->|PASS| Docs
+    ReadyQA -->|FAIL| InProg
+
+    Docs["DOCUMENTATION<br/><i>documenter</i><br/>writes 📝 Documentation Summary<br/>branch: docs-prefix/issue-key"]
+    Docs -->|completed| DevBranch
+    Docs -->|issue found| InProg
+
+    DevBranch["DEVELOP BRANCH<br/>merge → existing CI/CD<br/>(lint / SAST / tests / E2E / DAST / vuln scan)"]
+    DevBranch -->|merged| Done
+
+    Done(["DONE<br/><i>retrospective</i> async<br/>appends to learned-lessons"])
+
+    classDef gate fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#000
+    classDef terminal fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#000
+    classDef wait fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#000
+    class DesignGate,ReadyQA gate
+    class Done terminal
+    class Awaiting wait
 ```
 
 ---
@@ -301,31 +208,21 @@ For L/XL tasks the architect can split the parent into sub-issues. The
 sub-issues skip Triage and Design (the parent already designed them) and
 go straight into In Progress.
 
-```
-                       DECOMPOSITION FLOW (illustrative)
-                       =================================
+```mermaid
+flowchart TD
+    Design["Architect on a parent issue<br/>complexity L/XL + cross-module?"]
+    Design -->|no| Normal[Normal flow:<br/>single issue, single developer]
+    Design -->|yes| Decomp
 
-  ┌──────────┐
-  │ DESIGN   │  Architect: complexity L/XL + cross-module?
-  └────┬─────┘
-       │
-       ├─ NO → normal flow (single issue, single developer)
-       │
-       └─ YES →
-            │
-            ├─ 1. Create sub-issues via tracker API
-            │     parent → sub-1 [backend], sub-2 [frontend], sub-3 [worker]
-            │
-            ├─ 2. Write a HANDOFF comment on each sub-issue
-            │     (its slice of the design + Sprint Contract)
-            │
-            ├─ 3. Transition sub-issues straight to In Progress
-            │     (skipping Triage/Design)
-            │
-            ├─ 4. Label parent: ai-decomposed, ai-design-done
-            │
-            └─ 5. Sub-issues run independent pipelines
-                  When all sub-issues are Done → daemon transitions parent to Done.
+    Decomp["1. Create sub-issues via tracker API<br/>parent → sub-1, sub-2, sub-3"]
+    Decomp --> Handoff["2. Write a HANDOFF comment on each sub-issue<br/>(its slice of the design + Sprint Contract)"]
+    Handoff --> Transition["3. Transition sub-issues straight to In Progress<br/>(skipping Triage / Design)"]
+    Transition --> Label["4. Label parent: ai-decomposed, ai-design-done<br/>parent stays in Design"]
+    Label --> SubRun["5. Sub-issues run independent pipelines<br/>each gets its own developer / review / qa"]
+    SubRun --> Wait["When all sub-issues are Done →<br/>daemon transitions parent to Done"]
+
+    classDef happy fill:#dcfce7,stroke:#16a34a,color:#000
+    class Normal,Wait happy
 ```
 
 Decomposition rules of thumb (illustrative; tune to your team):

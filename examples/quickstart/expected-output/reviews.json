@@ -1,0 +1,21 @@
+{
+  "task_id": "20260427-1432-hlw",
+  "verdict": "PASS",
+  "run_at": "2026-04-27T14:40:33Z",
+  "sub_reviews": {
+    "correctness": { "verdict": "PASS", "high": 0, "medium": 0, "low": 1 },
+    "convention":  { "verdict": "PASS", "high": 0, "medium": 0, "low": 0 },
+    "quality":     { "verdict": "PASS", "high": 0, "medium": 0, "low": 0 },
+    "security":    { "verdict": "PASS", "critical": 0, "high": 0, "medium": 0 },
+    "tester":      { "verdict": "PASS", "tests_passed": 4, "tests_failed": 0, "bs_uncovered": 0 }
+  },
+  "blocking_findings": [],
+  "non_blocking_notes": [
+    {
+      "from": "review-correctness",
+      "id": "F-1",
+      "severity": "LOW",
+      "summary": "Optional: add 'name_length' field to the structured-log line — not required to pass"
+    }
+  ]
+}

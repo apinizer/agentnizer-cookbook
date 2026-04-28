@@ -97,6 +97,8 @@ Same task ID on five rows, five different OWNERs. That's the pipeline doing five
 
 We built this for ourselves. We open-sourced it on the off-chance someone else recognizes themselves in it. If you do — welcome. If you don't — there are friendlier introductions out there, and that's fine.
 
+> **A note on what's actually here.** The agent and skill files in `.claude/agents/` and `.claude/skills/` are **surface-level versions** of what we actually run. We've kept the structure, the role names, the state-machine wiring, and enough of the prompts to make the pipeline functional — but the deeper details (full prompt heuristics, our internal coding conventions, our project-specific manifest_check items, accumulated lessons) are not in this repo. The pipeline runs and produces real output; it just won't produce *our* output. Treat this as a working skeleton you specialize on top of, not as a turn-key replica.
+
 ---
 
 ## Why this design?

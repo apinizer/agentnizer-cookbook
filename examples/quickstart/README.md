@@ -39,20 +39,35 @@ cat .state/tasks/*/qa.md
 
 ## What you should see
 
-- An `analysis.md` with requirements, edge cases, and at least 2 BS items
-- A `design.md` with a Sprint Contract (SC-1, SC-2, ...)
-- A `progress.md` with a (small) "fake" code change — the developer agent
-  treats the demo module as a real module and attempts to write code
-  inside `examples/quickstart/code/`
-- `reviews/correctness.json`, `reviews/convention.json`,
-  `reviews/quality.json`, `reviews/security.json` — each with a verdict
-- A `tests.md` (the demo profile's `test` command is `echo "OK"`, so it
-  passes trivially)
-- A `qa.md` with PASS verdict
-- A `docs.md` and a `retro.md`
+When the run finishes, your `.state/tasks/<task-id>/` should contain
+files matching the shape and content of [`expected-output/`](expected-output/)
+in this directory. We've included a hand-written reference set there so
+you can:
 
-If all of that exists at the end, **the pipeline works on your machine**.
-You're ready to drop your real profiles in.
+- See what each artifact looks like *before* running anything
+- Diff your run's output against the reference to catch obvious gaps
+- Use the references as templates when you adapt the agents to your
+  stack
+
+The reference set covers:
+
+| File | What it is |
+|---|---|
+| [`expected-output/meta.json`](expected-output/meta.json) | Final task state with all `role_done` flags set |
+| [`expected-output/analysis.md`](expected-output/analysis.md) | Requirements, edge cases, 4 BS items |
+| [`expected-output/design.md`](expected-output/design.md) | Sprint Contract with 9 SC items |
+| [`expected-output/progress.md`](expected-output/progress.md) | Developer's implementation log + manifest evidence |
+| [`expected-output/reviews/correctness.json`](expected-output/reviews/correctness.json) | One sub-review verdict (3 others would look the same) |
+| [`expected-output/reviews.json`](expected-output/reviews.json) | Reviewer orchestrator's aggregate verdict |
+| [`expected-output/qa.md`](expected-output/qa.md) | E2E + smoke verdict |
+| [`expected-output/handoffs.jsonl`](expected-output/handoffs.jsonl) | Full inter-agent timeline (13 lines) |
+
+If your run produces a similar set of files, **the pipeline works on
+your machine**. You're ready to drop your real profiles in.
+
+> The `expected-output/` files are mock — written by hand, not produced
+> by an actual run. Real runs will have different timestamps, task IDs,
+> and exact wording. The *shape* is what matters.
 
 ## When this fails
 

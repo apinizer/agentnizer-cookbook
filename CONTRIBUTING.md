@@ -1,57 +1,66 @@
-# Contributing to the AI Pipeline Cookbook
+# Contributing
 
-We welcome contributions. Here's what's most useful:
+Thanks for considering a contribution. The cookbook is opinionated — we
+want to keep it that way — but we welcome focused, well-scoped patches.
 
-## High-Value Contributions
+## Before you open a PR
 
-- **Tracker adapters** — adapt `pipeline-daemon.py` to read state from Jira /
-  Linear / GitHub Issues / Asana instead of `.state/active.json`. This is
-  the most-requested feature; the local cookbook ships one viable backend
-  (the filesystem) but production teams often want a tracker as the
-  state-of-record.
-- **New agent roles** — performance-profiler, accessibility-reviewer,
-  i18n-checker, dependency-license-auditor, etc.
-- **Module profiles** — starter profiles for Go, Java, Rust, Ruby, etc.
-- **Learned lessons** — patterns you've discovered running the pipeline on
-  your own codebase.
+1. **Open an issue first** for anything non-trivial. We may already be
+   working on it, or have a reason it's shaped the way it is.
+2. **Read the README and `docs/use-case-tracker-driven-pipeline.md`** so
+   your change lands in the right place. Agent files are surface-level
+   skeletons; if your contribution requires changing core mechanics
+   (`pipeline-daemon.py`, `team.sh`, the `.state/` schema), say so in
+   the issue.
+3. **Run the quickstart** (`examples/quickstart/`) on your machine.
+   Confirm the pipeline still works end-to-end after your change.
 
-## How to Contribute
+## What we're most interested in
 
-1. Fork the repo.
-2. Make your changes. Run `./team.sh start "<your contribution as a task>"`
-   if you'd like to dogfood the pipeline on the contribution itself — works
-   best for new agents and module profiles.
-3. Open a PR. In the description: what problem it solves + what you tried +
-   how to validate.
+| Area | What helps |
+|---|---|
+| **Tracker adapters** | A working backend for Jira / Linear / GitHub Issues / GitLab Issues that swaps `.state/active.json` for tracker polling. See [`docs/use-case-tracker-driven-pipeline.md`](docs/use-case-tracker-driven-pipeline.md) for the contract. |
+| **New agent roles** | Performance profiler, accessibility reviewer, i18n checker, license auditor — anything that fits the existing parallel-review fan-out shape. |
+| **Module profile templates** | Starter profiles for common stacks (Go, Java, Rust, Ruby, .NET) with the `manifest_check` items pre-filled. |
+| **Documentation** | Real-world adoption notes, troubleshooting recipes, lessons that survived multiple runs. |
+| **Bug fixes** | Anything that breaks `examples/quickstart/` on a fresh checkout. |
 
-## Agent Prompt Guidelines
+## What we're less likely to merge
 
-When improving an agent's prompt:
+- Sweeping rewrites of core agents — these have been tuned over many
+  runs; please open an issue first.
+- New dependencies in `pipeline-daemon.py` (we keep it stdlib + `requests`
+  + optional `structlog`).
+- Stack-specific commands hardcoded into agent prompts — those belong in
+  `.claude/profiles/*.yaml`, not in agent definitions.
+- "I made it match my codebase" PRs — fork, don't upstream those.
 
-- **Specific over generic.** Concrete patterns beat platitudes — "for
-  shared counters, use a lock primitive scoped to the task" reads more
-  reliably than "be thread-safe".
-- **Examples over rules.** Show one good pattern and one anti-pattern. We
-  use this throughout the cookbook.
-- **Tag manifesto axes.** Every rule should reference at least one of
-  `[performance]` / `[thread-safety]` / `[safety]` / `[observability]`.
-- **Traceability.** Every rule should be traceable to a real failure mode
-  (in your runs, in `learned-lessons/`, or in a referenced public incident).
+## Pull request checklist
 
-## Tracker Adapter Guidelines
+- [ ] Issue opened and discussed (for non-trivial changes)
+- [ ] Quickstart still runs end-to-end (`examples/quickstart/README.md`)
+- [ ] If you touched an agent, you ran a real task through the modified
+      agent and the output is sane
+- [ ] If you touched a profile schema, the example profiles in
+      `.claude/profiles/` were updated to match
+- [ ] If you added a new file, it has a one-line description at the top
+- [ ] No vendor-specific names, paths, or credentials anywhere
+- [ ] No new dependencies without a one-line justification in the PR
 
-If you're adding tracker support, the architecture is:
-- The daemon's "read `.state/active.json`" call becomes a tracker poll for
-  open issues with the pipeline label.
-- The agents' "write `.state/tasks/<id>/<file>.md`" calls become tracker
-  comment posts.
-- The agents' "update `meta.json.status`" becomes a status transition.
-- The agents' `role_done.<role>` flags become labels (e.g.
-  `ai-developed`).
+## Style
 
-The agent prompts shouldn't change. Only the daemon and a thin I/O layer
-should.
+- Markdown: 80–90 column soft wrap, no trailing whitespace.
+- Python: PEP 8, no exotic dependencies.
+- Bash: `set -euo pipefail`, bash 4+ idioms, short and explicit.
+- Agent prompts: concrete > generic, manifesto-tagged, traceable to a
+  real failure mode.
 
-## Questions
+## Reporting security issues
 
-Open an issue.
+Don't open a public issue. Email the maintainers directly. We'll respond
+within a few days.
+
+## License
+
+By contributing you agree your contributions are licensed under MIT,
+matching the rest of the cookbook.

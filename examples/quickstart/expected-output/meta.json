@@ -1,0 +1,48 @@
+{
+  "id": "20260427-1432-hlw",
+  "title": "Add a tiny hello-world function to the demo module",
+  "description": "demo: Add a tiny 'hello world' function to the demo module that returns the current time and a friendly greeting. Accepts an optional name parameter; default 'world'. Includes a unit-test stub for happy path and empty-name case.",
+  "status": "done",
+  "module": "demo",
+  "secondary_modules": [],
+  "risk_level": "LOW",
+  "complexity": "S",
+  "owner_agent": null,
+  "created_at": "2026-04-27T14:32:00Z",
+  "updated_at": "2026-04-27T14:46:11Z",
+  "manifesto_axes": ["safety", "observability"],
+  "role_done": {
+    "planner": "2026-04-27T14:32:01Z",
+    "analyst": "2026-04-27T14:33:42Z",
+    "architect": "2026-04-27T14:35:08Z",
+    "developer": "2026-04-27T14:38:19Z",
+    "review-correctness": "2026-04-27T14:39:52Z",
+    "review-convention": "2026-04-27T14:39:48Z",
+    "review-quality": "2026-04-27T14:39:55Z",
+    "tester": "2026-04-27T14:40:10Z",
+    "security_reviewer": "2026-04-27T14:40:02Z",
+    "reviewer": "2026-04-27T14:40:33Z",
+    "qa": "2026-04-27T14:42:15Z",
+    "documenter": "2026-04-27T14:44:03Z",
+    "retrospective": "2026-04-27T14:45:51Z"
+  },
+  "read_allowlist": [
+    ".state/tasks/20260427-1432-hlw/",
+    "examples/quickstart/code/",
+    ".claude/profiles/demo.yaml",
+    "README.md"
+  ],
+  "token_budget": {
+    "soft_limit": 200000,
+    "hard_limit": 500000
+  },
+  "token_used": 81740,
+  "blocked_by": [],
+  "blocks": [],
+  "retry_count": {
+    "developer": 0,
+    "qa": 0,
+    "tester": 0
+  },
+  "failure_reasons": []
+}
