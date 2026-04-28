@@ -386,16 +386,77 @@ See [`.claude/profiles/README.md`](.claude/profiles/README.md) for what each pro
 
 ## The Manifesto
 
-Every change that flows through the pipeline is graded against **four axes**. The reviewer's job is to confirm all four were addressed; design and analysis tag the relevant axes upfront.
+Every change is graded against **four axes**. They're not philosophical preferences — each item below is on the list because we lost engineering hours, customer trust, or money to its absence. The reviewer checks the change against the `manifest_check` items in the relevant module's profile; a review that ignores any tagged axis fails.
 
-```
-[performance]      Connection pooling. Async I/O. Streaming. Caching.
-[thread-safety]    Stateless adapters. Advisory locks. Idempotent operations.
-[safety]           Strict input validation. Secret scoping. Rate limits.
-[observability]    Structured logs. OTel spans. Audit events.
-```
+The four axes:
 
-These aren't aspirational. They're enforced. Reviewer reads `meta.json.manifesto_axes` (planner sets these), checks the change covers each tagged axis, and fails the review if any is missing.
+### `[performance]`
+
+The hot path is hot. Every shortcut you didn't take *is* the shortcut someone takes at 3 AM during an incident.
+
+- **Connection pooling everywhere.** Per-process singletons with bounded max + idle timeout. A new connection per request is not a "performance optimization", it's a soft-DoS waiting for traffic.
+- **No sync I/O on the async path.** *One* blocking call inside an async loop will saturate the entire pool. Reviewer scans for unawaited or sync-bridge calls inside async functions.
+- **Streaming over buffering** for any response that can be > 1 MB. Memory-resident responses look fine in dev and OOM the worker under load.
+- **Pagination on every list.** Unbounded `SELECT *` is a guaranteed incident the day your largest tenant grows.
+- **Indexes on filter / sort columns.** Reviewer asks: "if this query runs 10×/sec under load, does it scan?"
+- **Cache-with-an-invalidation-strategy, not cache.** Stale-while-revalidate, write-through, or TTL — pick one, document it. Cache without an invalidation policy is a memory leak with a happy face.
+- **Logging is in the budget.** Structured logging on a 1k-RPS path can add 5–10 ms/request if you're not careful. Sample, async-append, or filter at source.
+
+> *Lesson learned the hard way:* an "async-everywhere" service had a single sync call buried inside a retry loop. Looked fine in dev. Production p99 became unbounded the moment traffic hit baseline. Now reviewers explicitly check every async function for stray blocking calls.
+
+### `[thread-safety]`
+
+If two requests can race, one of them eventually will — and the bug will look impossible.
+
+- **No module-level mutable state.** Globals are a classic bug source; reviewer flags any non-constant module-level binding.
+- **Stateless adapters / handlers.** Per-request context only. Anything that needs to live across requests goes through an explicit cache or store with documented semantics.
+- **Idempotency is a design choice, not a check.** Bake it into the data model (idempotency key column, dedup table) — not into the request handler. Retries should be safe by construction.
+- **Lock granularity matters both ways.** Over-locking → contention; under-locking → race. Reviewer asks: "what's the smallest scope where this lock is correct?"
+- **Distributed lock for distributed state.** Per-process locks are useless across replicas; use the database's advisory lock or equivalent.
+- **MDC / context-bound bindings are cleared in `finally`.** A leaked `tenant_id` from one request showing up in another's logs is a security incident, not a bug.
+- **"Should never happen" is a code smell.** If the comment is there, the path will execute. Either prove it's unreachable or handle it.
+
+> *Lesson learned the hard way:* a heisenbug where two concurrent requests would occasionally produce the same result, written twice. Tracked it for weeks. Root cause: missing lock around a "should never happen" branch. We now treat that phrase in code review as a failing finding by default.
+
+### `[safety]`
+
+The blast radius of a bad design decision is what defines safety. Cheap to add at design time; expensive after the incident.
+
+- **Strict input validation, no extras.** `extra="forbid"` (or your language's equivalent), fail-fast on unknown fields. Untrusted JSON is a load-bearing assumption — make it explicit.
+- **Output sanitization, not just input.** XSS / injection lives in *what you write back*, not just *what you read*.
+- **Secrets are per-tenant, scoped at the adapter.** Never at the call site. A misbehaving call site shouldn't be able to share a secret across tenants.
+- **Rate limit + circuit breaker on every outbound integration.** Bonus: cost guard for paid downstreams (LLMs, third-party APIs). A retry loop without a budget is a billing incident.
+- **Authorization is non-negotiable, even when it's annoying.** Don't fix a 403 by removing the guard. Reviewer fails any PR that deletes an authorization check without an explicit, security-reviewed exception.
+- **DTO and entity are separate types.** Returning the entity directly leaks fields the caller shouldn't see and ties your API to your storage schema.
+- **Sandbox user-supplied code.** Any path that evaluates string-as-code from a user is a containment problem, not a feature.
+- **Prompt injection is a real attack surface** for LLM-integrated systems. Validate, structure, and never let user content change the agent's role.
+
+> *Lesson learned the hard way:* an LLM call without a token cap encountered a malformed retry loop and ran in tight succession on a paid model. ~$2k charge in one afternoon, on a single tenant. Cost guards now live at the *adapter* layer, not at the call site — every outbound call to a paid downstream is bounded by construction.
+
+### `[observability]`
+
+If you can't see what the system did, you can't fix what the system did.
+
+- **Structured logs only.** Every field is a key. No `f"user {x} did {y}"` strings — that's an unsearchable diary entry.
+- **Trace correlation everywhere.** A request that crosses three services with three different `request_id`s might as well be invisible. Propagate trace context at every boundary.
+- **Standard log fields, set at request entry.** `tenant_id`, `user_id`, `flow_id`, `request_id` — bound once via a context-binding logger, available to every downstream log call. Never reconstructed.
+- **Audit log on every state change.** Who, what, when, before, after. Compliance asks for this; your future self asks for this when something silently broke six months ago.
+- **Metrics are tagged with what you'll actually filter by.** Latency by endpoint *and* tenant. Error rate by endpoint *and* error class. Untagged metrics are decorative.
+- **Async appenders on the hot path.** Logging at 1k RPS with a sync appender can drop your p99 by 8 ms under load.
+- **Cost-tracking event per outbound paid call.** If you can't graph your spend per tenant per hour, you can't catch a runaway loop in time.
+- **One unique error code per failure mode.** "Internal server error" is not an error mode; "AUTH_TOKEN_EXPIRED" is.
+
+> *Lesson learned the hard way:* an incident took four hours to triage because the logs didn't include `tenant_id` on the affected code path. We now treat "logs without tenant binding at request entry" as a CRITICAL finding, not a nit.
+
+### Why these are *manifesto-grade*, not just code review notes
+
+A manifesto item is something we'd block a release on. It's a check that:
+
+1. **Has a concrete pass/fail** — not "use good judgment".
+2. **Maps to a real failure mode** we (or the industry) have actually hit.
+3. **Is reviewable in code** — not subjective.
+
+Items that don't meet all three belong in style guides, not the manifesto. The cookbook ships these four axes as a starting point; the `manifest_check` lists in `.claude/profiles/*.yaml` are how you grow them with what *your* runs surface. The retrospective agent feeds new patterns back, the tuner propagates them into the profiles, and over time your manifest_check items become a fingerprint of your project's actual failure surface.
 
 ---
 
