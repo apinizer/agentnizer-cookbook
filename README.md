@@ -18,11 +18,38 @@
 
 ## What is this?
 
-> **This is not a demo. We ship features into production with this pipeline every working day.**
+> **This is not a demo. We use this pipeline every working day to ship features.**
 
-It's the anonymized `.claude/` directory of our actual development team — project names, paths, and credentials scrubbed out, the mechanics intact. The agents you'll find in `.claude/agents/` are the same ones we hand real tickets to. The daemon in `.claude/scripts/pipeline-daemon.py` is the same one that's running on a machine right now, three feet from where this README was written.
+In one sentence: a **13-agent assembly line** that takes a plain-English task and turns it into a reviewed, tested, security-scanned, documented PR — end to end, no human in the loop except at two gates.
 
-**The core idea:** instead of one Claude session doing everything, we built **a 13-agent assembly line**. You hand it a task in plain English; the team plans, analyzes, designs, builds, reviews (3 reviewers in parallel), tests, QAs, security-scans, documents, and writes a retrospective — all without you in the loop, end to end. Every step writes to disk. Crash? Resume. Reboot? Resume. The team picks up exactly where it stopped.
+### What's real
+
+These come straight from what we run in production:
+
+- The **13 agent roles** and how they hand work to each other
+- The **parallel review fan-out** (3 reviewers + tester + security all on the same diff)
+- The **manifesto axes** (`performance` / `thread-safety` / `safety` / `observability`)
+- The **Sprint Contract** pattern (architect's design becomes the spec everyone is graded against)
+- **Idempotency** (`role_done.<role>` flags — crash anywhere, resume cleanly)
+- **Retry caps**, status state machine, decomposition flow
+
+### What's different from what we actually run
+
+- Our production pipeline is **tracker-driven** — real tickets in our issue tracker, agents post output as ticket comments, status transitions drive the state machine. See [`docs/use-case-tracker-driven-pipeline.md`](docs/use-case-tracker-driven-pipeline.md) for that shape.
+- This cookbook ships a **local-state version** — `.state/` directory + filesystem instead of a tracker. Same agents, simpler backend. We chose this because it's runnable without a tracker integration and publishable without leaking project specifics.
+
+### What's NOT in this repo
+
+- Full prompt heuristics each agent has accumulated over hundreds of runs
+- Our internal coding conventions
+- Project-specific `manifest_check` items per module
+- The library of `learned-lessons/<module>-lessons.md` patterns we've built up
+
+The agent files are **functional skeletons** — they'll run end-to-end and produce real output; they just won't produce *our* output.
+
+### What to do with it
+
+Treat this as the **working skeleton you specialize on top of**, not as a turn-key replica. Run the [quickstart](examples/quickstart/README.md) to confirm it works on your machine, then drop your real profiles in and start tuning the agents to your codebase.
 
 ```bash
 $ ./team.sh start "Add a health check endpoint that verifies dependencies"
@@ -43,7 +70,7 @@ Recent Completed (last 5):
   20260427-1432-hlt  <your-module>  done  0:14:11  82k
 ```
 
-That's it. One command. A reviewed, tested, security-scanned, documented PR-ready change on disk — produced by the exact same pipeline we use to ship our own product.
+That's it. One command. A reviewed, tested, security-scanned, documented PR-ready change on disk — produced by the same agent line-up we use to ship our own work, just with a local-filesystem backend instead of our tracker.
 
 ### What it looks like when the team is busy
 
