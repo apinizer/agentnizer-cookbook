@@ -384,47 +384,6 @@ See [`.claude/profiles/README.md`](.claude/profiles/README.md) for what each pro
 
 ---
 
-## The Manifesto
-
-The pipeline grades every change against **four axes**. The planner tags which axes are critical for a task; the reviewer checks the diff against the *concrete* `manifest_check` items in the relevant module's profile, axis by axis; if the change ignores any tagged axis, the review fails.
-
-```
-[performance]      Will this hold up under load? Hot-path budget kept?
-[thread-safety]    Will it survive two concurrent runs? Idempotent on retry?
-[safety]           Validated inputs, scoped secrets, bounded blast radius?
-[observability]    Can we see what it did? Trace + audit + metric + log?
-```
-
-These are **lenses for review**, not the rules themselves. The actual pass/fail rules live in your project's `.claude/profiles/<module>.yaml` under `manifest_check`. That's where you bake your team's hard-won lessons — your own anti-patterns, your stack's foot-guns, your domain's invariants — and the reviewer enforces them mechanically.
-
-```yaml
-# Example: shape of manifest_check in a profile
-manifest_check:
-  performance:
-    - "List endpoints paginated?"
-    - "Logging on hot paths uses async appenders?"
-  thread_safety:
-    - "All operations idempotent (retry-safe by construction)?"
-    - "No module-level mutable state?"
-  safety:
-    - "Authorization checked on every protected endpoint?"
-    - "Outbound paid calls have a cost guard at the adapter layer?"
-  observability:
-    - "Standard log fields bound at request entry (tenant_id, user_id, request_id)?"
-```
-
-A manifesto-grade item passes three tests:
-
-1. **Concrete pass/fail** — not "use good judgment".
-2. **Maps to a real failure mode** *you* have actually hit (or know you will).
-3. **Reviewable in code** — not subjective.
-
-Items failing those tests belong in a style guide, not in `manifest_check`.
-
-**How this grows over time:** the retrospective agent surfaces patterns from each completed task into `.claude/learned-lessons/<module>-lessons.md`. The tuner agent (run periodically) reads those lessons and proposes additions to `manifest_check`. The cookbook ships **starter** axes and **empty** lesson files on purpose — your project's manifest_check items become a fingerprint of your team's actual failure surface, not ours.
-
----
-
 ## Production adaptations
 
 The cookbook ships a fully local example because it's the simplest thing that actually works. But the architecture has clean seams for production scaling. **None of this is required to run the cookbook**, but here's how to extend it:
