@@ -22,34 +22,20 @@
 
 In one sentence: a **13-agent assembly line** that takes a plain-English task and turns it into a reviewed, tested, security-scanned, documented PR — end to end, no human in the loop except at two gates.
 
-### What's real
+### Cookbook vs what we actually run
 
-These come straight from what we run in production:
+**Same in both:** 13-agent assembly line · parallel review fan-out · manifesto axes (`performance` / `thread-safety` / `safety` / `observability`) · Sprint Contract pattern · idempotency · retry caps · two human gates (design + QA).
 
-- The **13 agent roles** and how they hand work to each other
-- The **parallel review fan-out** (3 reviewers + tester + security all on the same diff)
-- The **manifesto axes** (`performance` / `thread-safety` / `safety` / `observability`)
-- The **Sprint Contract** pattern (architect's design becomes the spec everyone is graded against)
-- **Idempotency** (`role_done.<role>` flags — crash anywhere, resume cleanly)
-- **Retry caps**, status state machine, decomposition flow
+**Different:**
 
-### What's different from what we actually run
+|  | In production | In this cookbook |
+|---|---|---|
+| **State machine** | Issue tracker drives status transitions — see [the use-case doc](docs/use-case-tracker-driven-pipeline.md) | `.state/` filesystem |
+| **Agent prompts** | Tuned to our stack and team rules | Generic, you adapt |
+| **Coding conventions / pitfalls** | Baked into every prompt | Not included |
+| **Learned lessons** | Months accumulated | Empty templates |
 
-- Our production pipeline is **tracker-driven** — real tickets in our issue tracker, agents post output as ticket comments, status transitions drive the state machine. See [`docs/use-case-tracker-driven-pipeline.md`](docs/use-case-tracker-driven-pipeline.md) for that shape.
-- This cookbook ships a **local-state version** — `.state/` directory + filesystem instead of a tracker. Same agents, simpler backend. We chose this because it's runnable without a tracker integration and publishable without leaking project specifics.
-
-### What's NOT in this repo
-
-- Full prompt heuristics each agent has accumulated over hundreds of runs
-- Our internal coding conventions
-- Project-specific `manifest_check` items per module
-- The library of `learned-lessons/<module>-lessons.md` patterns we've built up
-
-The agent files are **functional skeletons** — they'll run end-to-end and produce real output; they just won't produce *our* output.
-
-### What to do with it
-
-Treat this as the **working skeleton you specialize on top of**, not as a turn-key replica. Run the [quickstart](examples/quickstart/README.md) to confirm it works on your machine, then drop your real profiles in and start tuning the agents to your codebase.
+Treat this as the **working skeleton you specialize on top of**, not as a turn-key replica. Run the [quickstart](examples/quickstart/README.md) to confirm it works on your machine, then drop your real profiles in.
 
 ```bash
 $ ./team.sh start "Add a health check endpoint that verifies dependencies"
