@@ -60,9 +60,21 @@ Recent Completed (last 5):
 
 That's it. One command. A reviewed, tested, security-scanned, documented PR-ready change on disk — produced by the same agent line-up we use to ship our own work, just with a local-filesystem backend instead of our tracker.
 
-### What it looks like when the team is busy
+### Why review is a 5-way fan-out, not one big reviewer
 
-The "wow" moment is the **review fan-out**: when the developer ships, **five Claude subprocesses spawn at once against the same diff** — three reviewers (correctness, convention, quality), the tester, and the security-reviewer. They run in parallel; the orchestrator waits for all five and then aggregates the verdict.
+A single "review my code" prompt is a coin flip. It catches the *kind* of issue the reviewer happens to focus on first; the rest slip through. We tried it. It didn't ship.
+
+So when the developer ships, the daemon spawns **five independent Claude subprocesses at the same time** against the same diff:
+
+- **`review-correctness`** — bugs, missing edge cases, BS coverage
+- **`review-convention`** — lint / format / style violations
+- **`review-quality`** — DRY, SRP, complexity, dead code
+- **`tester`** — runs the actual test suite
+- **`security-reviewer`** — OWASP + module-specific checks
+
+They don't talk to each other — that's deliberate. No groupthink, no *"the first reviewer said it's fine, I'll skip"*. An orchestrator (`reviewer`) waits for all five, aggregates the verdict, and either passes the task to QA or hands it back to the developer with the blocking findings.
+
+This is the shape, in one diagram:
 
 ```mermaid
 flowchart LR
@@ -88,7 +100,7 @@ flowchart LR
     class QA next
 ```
 
-A still capture of the same moment, in plain text from `team.sh status`:
+And what that *actually looks like* on disk, the moment the fan-out is mid-run — five rows in `team.sh status`, same task ID, five different OWNERs:
 
 ```
 $ ./team.sh status
