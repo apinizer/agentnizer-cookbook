@@ -1,0 +1,53 @@
+# .claude/profiles/shared.yaml
+# Example shared / cross-cutting library module.
+# Replace command bodies with whatever your stack uses.
+
+module: shared
+type: shared_library
+default_risk_level: CRITICAL
+
+paths:
+  - "apps/shared/**"
+
+build:
+  command: "<your build command for the shared module>"
+  cwd: "apps/shared"
+
+test:
+  command: "<your test command for the shared module>"
+
+lint:
+  command: "<your lint command for the shared module>"
+
+# When the shared library changes, every downstream module should re-test.
+cascade:
+  triggers:
+    - backend
+    - worker
+    - frontend
+  note: "All downstream modules depend on this — a breaking change here breaks everything."
+
+manifest_check:
+  performance:
+    - "Validation path tuned (compiled schemas, no per-call overhead)?"
+    - "Logger overhead minimal on the hot path?"
+  thread_safety:
+    - "Models immutable / frozen?"
+    - "Logger bindings context-bound (per-task, not global)?"
+    - "No global mutable state — only data-class / model objects?"
+  safety:
+    - "Strict validation default (unknown fields rejected)?"
+    - "Secret redaction configured in the logger pipeline?"
+    - "Sensitive fields wrapped in a typed Secret container?"
+    - "Tagged unions / discriminators used for type narrowing?"
+  observability:
+    - "Distributed-trace provider configure helper present?"
+    - "Logger ↔ trace correlation (trace_id injection)?"
+    - "Standard log fields defined: tenant_id, user_id, flow_id, agent_id?"
+
+depends_on: []
+
+notes: |
+  Shared / cross-cutting example. A breaking change here cascades to every
+  downstream module — the cascade.triggers list ensures their tests run
+  before the change is allowed through review.

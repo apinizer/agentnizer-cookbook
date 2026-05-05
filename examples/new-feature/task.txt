@@ -1,0 +1,19 @@
+Add user invitation flow with email verification to the backend module.
+
+Endpoints:
+- POST /invites — admin creates invite. Body: {"email": str, "role": str}. Returns {"invite_id": str, "expires_at": iso8601}.
+- GET /invites/{token} — recipient lands here. Returns {"email": str, "invited_by": str, "expires_at": iso8601, "status": "pending"|"accepted"|"revoked"|"expired"}.
+- POST /invites/{token}/accept — recipient sets password. Body: {"password": str, "name": str}. Creates user, marks invite accepted, returns {"user_id": str, "session_token": str}.
+- DELETE /invites/{invite_id} — admin revokes. Idempotent.
+
+Behavior:
+- Tokens are 256-bit URL-safe random, single-use, unguessable.
+- Tokens expire after 7 days; expired tokens return 410 Gone on GET, 410 on accept attempt.
+- Admins cannot create a second pending invite for an email that already has one — return 409 with the existing invite_id.
+- Revoking a pending invite is idempotent; revoking an accepted or expired invite returns 409.
+- The accept endpoint enforces password strength (min 12 chars, mixed case, at least one digit).
+
+Side effects:
+- Sending email is stubbed in services/email.py — log the recipient + token URL but do not actually send. Real SMTP wiring is out of scope.
+
+Module: backend. Risk level: MEDIUM (new auth surface, email side effect). Complexity: M.

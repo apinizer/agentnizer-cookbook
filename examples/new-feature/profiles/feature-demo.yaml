@@ -1,0 +1,60 @@
+# Profile for the new-feature recipe.
+#
+# This profile mirrors backend.yaml but uses harmless echo commands so the
+# pipeline can run end-to-end without you wiring up a real Python toolchain.
+# Replace the build/test/lint with real commands when adapting to your repo.
+
+module: feature-demo
+language: python
+risk_level: MEDIUM
+complexity_default: M
+
+# Where the developer is allowed to read/write while implementing.
+# Keep this tight — broad allowlists invite scope creep.
+read_allowlist:
+  - "examples/new-feature/"
+  - "apps/backend/"          # imaginary; the demo profile does not need real files
+  - ".claude/profiles/feature-demo.yaml"
+  - "README.md"
+  - "STATUS.md"
+  - "CLAUDE.md"
+
+# Build/test/lint — replace with real commands for your stack.
+build:
+  command: "echo '[demo] build OK'"
+  timeout_sec: 60
+
+test:
+  command: "echo '[demo] tests passed (3/3)'"
+  timeout_sec: 120
+  coverage_threshold: 0   # demo: don't enforce coverage
+
+lint:
+  command: "echo '[demo] lint clean'"
+  timeout_sec: 30
+
+# Manifest check — what the architect's design and developer's progress
+# must reference. The reviewer grades against this list.
+manifest_check:
+  performance:
+    - "Token generation must use secrets.token_urlsafe(32) — 256-bit entropy."
+    - "Invite lookup by token uses a unique index; no full-table scan."
+  thread_safety:
+    - "POST /invites uses ON CONFLICT to handle concurrent invite creation for the same email."
+    - "Accept endpoint takes a row-level lock on the invite to prevent double-accept races."
+  safety:
+    - "Token is constant-time-compared on lookup (use hmac.compare_digest) to prevent timing attacks."
+    - "Password strength validated server-side before hashing; minimum 12 chars, mixed case, digit."
+    - "Email field is normalized (lowercase, strip) before uniqueness check."
+  observability:
+    - "Structured log on invite created, accepted, revoked, expired — include invite_id but never the token."
+    - "Counters: invite.created, invite.accepted, invite.revoked, invite.expired_landing."
+
+# Hooks the daemon runs before/after dev — keep these as no-ops in the demo.
+pre_hooks: []
+post_hooks: []
+
+# Risk gates — MEDIUM means human review optional but recommended.
+human_review:
+  required: false
+  recommended_on_first_run: true

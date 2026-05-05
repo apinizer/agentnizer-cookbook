@@ -1,0 +1,37 @@
+{
+  "agent": "review-correctness",
+  "task_id": "20260427-1432-hlw",
+  "verdict": "PASS",
+  "run_at": "2026-04-27T14:39:52Z",
+  "findings": [
+    {
+      "id": "F-1",
+      "severity": "LOW",
+      "category": "observability",
+      "manifesto": ["observability"],
+      "ref_bs": [],
+      "ref_sc": ["SC-6"],
+      "file": "examples/quickstart/code/hello.<ext>",
+      "line": 14,
+      "summary": "Log field 'name_provided' is a bool, but doesn't carry the name length — would be a low-cost addition for capacity planning later",
+      "suggestion": "Optional: add 'name_length: int' as a second field. Not required to pass; flagging for future."
+    }
+  ],
+  "bs_coverage": {
+    "BS-1": "PASS",
+    "BS-2": "PASS",
+    "BS-N1": "PASS",
+    "BS-N2": "PASS"
+  },
+  "sc_coverage": {
+    "SC-1": "PASS",
+    "SC-2": "PASS",
+    "SC-3": "PASS",
+    "SC-4": "PASS",
+    "SC-5": "PASS",
+    "SC-6": "PASS",
+    "SC-7": "PASS",
+    "SC-8": "PASS",
+    "SC-9": "PASS"
+  }
+}

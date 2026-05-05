@@ -1,0 +1,32 @@
+# Local-only state and history (each user has their own)
+.state/
+STATUS.md
+STATUS-history/
+
+# Local secrets and runtime locks
+.claude/.env
+.claude/state/
+.claude/scheduled_tasks.lock
+
+# OS
+.DS_Store
+*.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+.next/
+dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp

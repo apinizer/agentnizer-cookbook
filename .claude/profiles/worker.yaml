@@ -1,0 +1,63 @@
+# .claude/profiles/worker.yaml
+# Example "worker" / background-job module (long-running tasks, queue
+# consumers, async processors).
+# Rename and replace command bodies to match your project.
+
+module: worker
+type: data_plane
+default_risk_level: HIGH
+
+paths:
+  - "apps/worker/**"
+
+build:
+  command: "<your build command for the worker module>"
+  cwd: "apps/worker"
+
+test:
+  command: "<your test command for the worker module>"
+
+# Specialized tests the tester runs after the main test command.
+concurrency_test:
+  command: "<your concurrency-stress test command, if any>"
+
+lint:
+  command: "<your lint command for the worker module>"
+
+# Optional smoke / e2e for the qa agent
+# smoke:
+#   command: "<smoke command>"
+# e2e:
+#   command: "<e2e command>"
+
+manifest_check:
+  performance:
+    - "All I/O async / non-blocking?"
+    - "Connection pooling enabled per outbound dependency?"
+    - "Streaming used where applicable?"
+  thread_safety:
+    - "Worker stateless — no module-level mutable state?"
+    - "Locks (in-process or distributed) used for shared resources?"
+    - "All operations idempotent (safe to retry without duplicate effects)?"
+    - "Concurrency test covers parallel execution of the same flow?"
+  safety:
+    - "Inputs validated strictly (no untrusted free-form data)?"
+    - "Secrets scoped per-tenant (no cross-tenant key access)?"
+    - "Rate limit and cost guard enforced?"
+    - "Sandbox enforced for any user-supplied code?"
+  observability:
+    - "Structured-log binding includes flow_id, tenant_id, run_id?"
+    - "Distributed-trace span per outbound call?"
+    - "Audit log on flow start / complete / error?"
+
+cascade:
+  triggers: []
+
+depends_on:
+  - shared
+
+notes: |
+  Background-job / async-processor example. Concurrency, idempotency,
+  and observability are all critical for any job runner. The tester is
+  configured to run a separate concurrency test after the main suite —
+  fill in `concurrency_test.command` with your stack's stress-test setup.

@@ -1,0 +1,58 @@
+# .claude/profiles/backend.yaml
+# Example "backend" / API-server module.
+# Rename and replace command bodies to match your project.
+
+module: backend
+type: api_server
+default_risk_level: MEDIUM
+
+# Files this profile claims (used by /verify and the after-code-change hook
+# to figure out which module a changed file belongs to).
+paths:
+  - "apps/backend/**"
+
+build:
+  command: "<your build command for the backend module>"
+  cwd: "apps/backend"
+
+test:
+  command: "<your test command for the backend module>"
+
+lint:
+  command: "<your lint command for the backend module>"
+
+# Optional: full smoke and e2e commands for the qa agent.
+# smoke:
+#   command: "<command that briefly verifies the module is alive>"
+# e2e:
+#   command: "<command that exercises a full flow through the module>"
+
+manifest_check:
+  performance:
+    - "Async I/O on the request path? (no blocking calls)"
+    - "DB queries use indexes?"
+    - "List endpoints paginated?"
+  thread_safety:
+    - "No module-level mutable state?"
+    - "State scoped to request/session only?"
+  safety:
+    - "Authorization checked on every protected endpoint?"
+    - "Tenant isolation enforced (row-level security or equivalent)?"
+    - "Inputs validated strictly (no untrusted free-form data)?"
+    - "Secrets never returned in API responses?"
+  observability:
+    - "Audit log on every write (who / what / when)?"
+    - "Distributed-trace span per request?"
+    - "Structured log includes tenant_id, user_id, endpoint?"
+
+# When this module's tests run, these other modules' tests should also run.
+cascade:
+  triggers: []
+
+depends_on:
+  - shared
+
+notes: |
+  Backend / API server example. Authorization checks and audit logging
+  on state-changing endpoints are usually non-negotiable for production
+  systems — adapt the manifest_check items to match your auth model.
